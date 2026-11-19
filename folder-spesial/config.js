@@ -6,7 +6,7 @@ window.PENGATURAN = {
   // misalnya https://galeri-foto.vercel.app
   // (localhost hanya jalan di komputer yang sedang menjalankan galeri).
   // Tes di komputer: http://localhost:3000
-  galeriUrl: 'http://localhost:3000',
+  galeriUrl: 'https://shafa-galeri-polaroid.vercel.app',
 
   // Foto yang diubah jadi gambar garis. Taruh file-nya di folder ini.
   // Paling bagus: foto berdua / siluet dengan latar polos atau gelap.
@@ -14,13 +14,13 @@ window.PENGATURAN = {
   foto: 'foto.jpg',
 
   // Nama dia
-  nama: 'Nama Dia',
+  nama: 'Najwa Shafa Az-zahra',
 
   // Judul di atas nama
   judul: 'Selamat ulang tahun',
 
   // Kalimat yang muncul kata demi kata. Pakai \n untuk pindah baris.
-  pesan: 'Ini hadiah kecil untukmu:\ntempat menyimpan foto-foto yang kamu suka.',
+  pesan: 'selamat ulang tahun shafa walaupun kadang ngeselin tapi lu asik jadi gw bikinin ini:\n semoga panjang umur dan murah hati dan jangan marah-marah terus\n Apa yang udah lu mulai harus lu akhiri.',
 
   // Tulisan di tombol
   tombol: 'Buka galeri',
