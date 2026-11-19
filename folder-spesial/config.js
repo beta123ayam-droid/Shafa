@@ -1,6 +1,8 @@
 // ===== FILE YANG KAMU EDIT =====
 // Ganti teks di dalam tanda kutip. Biarkan tanda kutip dan koma tetap ada.
 window.PENGATURAN = {
+  tema: 'hitam-putih',
+  jenisFoto: 'sketsa',
   // Alamat aplikasi galeri-polaroid (tanpa garis miring di akhir).
   // PENTING: setelah dihosting, WAJIB diganti dengan alamat Vercel galeri,
   // misalnya https://galeri-foto.vercel.app
