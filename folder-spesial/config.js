@@ -27,7 +27,7 @@ window.PENGATURAN = {
   judul: 'Selamat ulang tahun',
 
   // Kalimat yang muncul kata demi kata. Pakai \n untuk pindah baris.
-  pesan: 'selamat ulang tahun shafa walaupun kadang ngeselin tapi lu asik jadi gw bikinin ini:\n semoga panjang umur dan murah hati dan jangan marah-marah terus\n Apa yang udah lu mulai harus lu akhiri.',
+  pesan: 'selamat ulang tahun shafa walaupun kadang ngeselin tapi lu asik jadi gw bikinin ini\n semoga panjang umur dan murah hati dan jangan marah-marah terus\n Apa yang udah lu mulai harus lu akhiri.',
 
   // Tulisan di tombol
   tombol: 'Buka galeri',
