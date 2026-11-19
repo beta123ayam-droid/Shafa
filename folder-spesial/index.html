@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Selamat ulang tahun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Cormorant+Garamond:ital,wght@1,500&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08050f;--ink:#efe6f7;--pink:#f0b6dc;--ser:'Cormorant Garamond',Georgia,serif;--hand:'Caveat',cursive;--ui:'DM Sans',system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{color:var(--ink);font-family:var(--ui);min-height:100svh;overflow-x:hidden}
+[hidden]{display:none!important}
+.stage{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(52px + env(safe-area-inset-top,0px)) 22px calc(28px + env(safe-area-inset-bottom,0px));text-align:center;background:radial-gradient(ellipse at 50% 28%,#170d27,transparent 70%)}
+#art{display:block;width:min(88vw,420px);height:auto;max-height:46svh;object-fit:contain}
+.head{opacity:0;transform:translateY(8px);transition:opacity 1s ease,transform 1s ease}
+.j{display:block;font-family:var(--ser);font-style:italic;font-size:1.25rem;letter-spacing:.04em;opacity:.9}
+.n{display:block;font-family:var(--hand);font-size:clamp(2.8rem,12vw,4rem);line-height:1;margin-top:2px;text-shadow:0 0 18px rgba(240,182,220,.45)}
+.msg{font-family:var(--ser);font-style:italic;font-size:1.3rem;line-height:1.5;max-width:30ch;margin:0}
+.w{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(6px);transition:opacity .9s ease,filter .9s ease,transform .9s ease}
+.on .head{opacity:1;transform:none}
+.on .w{opacity:.95;filter:none;transform:none}
+.enter{display:inline-block;margin-top:6px;padding:13px 36px;border-radius:999px;background:var(--pink);color:#2a1030;font-weight:700;font-size:1.02rem;text-decoration:none;opacity:0;pointer-events:none;transition:opacity .9s ease}
+.btn .enter{opacity:1;pointer-events:auto}
+.enter:hover{filter:brightness(1.08)}
+.enter:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.fast *{transition:none!important}
+.warn{margin:0;max-width:30ch;font-size:.8rem;color:#f3c7c7}
+.skip{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;padding:8px 10px;border:0;background:none;color:var(--ink);opacity:.5;font:inherit;font-size:.85rem;cursor:pointer}
+.gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;border:0;background:var(--bg);color:var(--ink);font-family:var(--ser);font-style:italic;font-size:1.6rem;cursor:pointer}
+</style>
+</head>
+<body>
+<main class="stage" id="stage">
+  <canvas id="art" aria-hidden="true"></canvas>
+  <div class="head"><span class="j" id="judul"></span><span class="n" id="nama"></span></div>
+  <p class="msg" id="pesan"></p>
+  <a class="enter" id="masuk" href="#"></a>
+  <p class="warn" id="warn" hidden>Alamat galeri belum diatur. Ganti galeriUrl di config.js dengan alamat Vercel galeri.</p>
+</main>
+<button class="skip" id="skip" hidden>Lewati</button>
+<button class="gate" id="gate" hidden>Ketuk untuk mulai</button>
+<audio id="aud" loop preload="auto"></audio>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  var C = Object.assign({
+    galeriUrl: 'http://localhost:3000', foto: 'foto.jpg', nama: 'Nama Dia',
+    judul: 'Selamat ulang tahun',
+    pesan: 'Ini hadiah kecil untukmu:\ntempat menyimpan foto-foto yang kamu suka.',
+    tombol: 'Buka galeri', musik: '', detail: 0.6
+  }, window.PENGATURAN || {});
+
+  var $ = function (id) { return document.getElementById(id); };
+  var S = 2, MAXW = 360, MAXH = 460, TRACE = 7.5, LEAD = 0.5, HEAD = 0.45;
+  var stage = $('stage'), cv = $('art'), ctx = cv.getContext('2d');
+  var words = 0, run = 0, raf = 0, btnTimer = 0, skipFn = null, lastSrc = null;
+
+  document.title = C.judul + (C.nama ? ', ' + C.nama : '');
+  $('judul').textContent = C.judul + (C.nama ? ',' : '');
+  $('nama').textContent = C.nama;
+  $('masuk').textContent = C.tombol;
+  $('masuk').href = String(C.galeriUrl).replace(/\/+$/, '') + '/login';
+  if (C.musik) $('aud').src = C.musik;
+  // Tombol yang menuju localhost tidak akan jalan di HP orang lain
+  if (/localhost|127\.0\.0\.1/.test(C.galeriUrl) && !/^(localhost|127\.0\.0\.1)?$/.test(location.hostname) && !window.__pratinjau) {
+    $('warn').hidden = false;
+  }
+
+  // Kalimat: tiap kata jadi satu elemen supaya bisa muncul bergantian
+  (function () {
+    var box = $('pesan'), lines = String(C.pesan || '').split('\n');
+    lines.forEach(function (line, li) {
+      line.split(/\s+/).filter(Boolean).forEach(function (w) {
+        var s = document.createElement('span');
+        s.className = 'w'; s.textContent = w;
+        s.style.transitionDelay = (0.9 + words * 0.32) + 's';
+        box.appendChild(s); box.appendChild(document.createTextNode(' '));
+        words++;
+      });
+      if (li < lines.length - 1) box.appendChild(document.createElement('br'));
+    });
+  })();
+
+  // ---- Palet warna: merah muda -> lavender -> biru muda ----
+  var STOPS = [[245,175,220],[210,180,245],[165,205,250]], NC = 24, DIM = [], CORE = [];
+  for (var k = 0; k < NC; k++) {
+    var f = k / (NC - 1) * (STOPS.length - 1), i0 = Math.min(Math.floor(f), STOPS.length - 2), u = f - i0, c = [];
+    for (var j = 0; j < 3; j++) c.push(Math.round(STOPS[i0][j] + (STOPS[i0 + 1][j] - STOPS[i0][j]) * u));
+    DIM.push('rgba(' + c.join(',') + ',0.07)'); CORE.push('rgba(' + c.join(',') + ',0.9)');
+  }
+
+  // ---- Gambar contoh (hati) kalau foto tidak ada ----
+  function sample() {
+    var c = document.createElement('canvas'); c.width = 300; c.height = 300;
+    var g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 300, 300);
+    function heart(sc) {
+      g.beginPath();
+      for (var a = 0; a <= Math.PI * 2 + 0.05; a += 0.05) {
+        var x = 16 * Math.pow(Math.sin(a), 3),
+            y = 13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a);
+        if (a === 0) g.moveTo(150 + x * sc, 140 - y * sc); else g.lineTo(150 + x * sc, 140 - y * sc);
+      }
+      g.closePath();
+    }
+    g.fillStyle = '#fff'; heart(8); g.fill();
+    g.fillStyle = '#000'; heart(5.4); g.fill();
+    g.fillStyle = '#fff'; heart(3.2); g.fill();
+    return c;
+  }
+
+  function blur(a, W, H) {
+    var kk = [1, 4, 6, 4, 1], t = new Float32Array(W * H), o = new Float32Array(W * H), x, y, q, s, xx, yy;
+    for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+      s = 0; for (q = -2; q <= 2; q++) { xx = Math.min(W - 1, Math.max(0, x + q)); s += a[y * W + xx] * kk[q + 2]; }
+      t[y * W + x] = s / 16;
+    }
+    for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+      s = 0; for (q = -2; q <= 2; q++) { yy = Math.min(H - 1, Math.max(0, y + q)); s += t[yy * W + x] * kk[q + 2]; }
+      o[y * W + x] = s / 16;
+    }
+    return o;
+  }
+
+  // ---- Foto -> garis tepi (Sobel + penipisan + hysteresis) ----
+  function analyze(src) {
+    var sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
+    var sc = Math.min(MAXW / sw, MAXH / sh), W = Math.max(40, Math.round(sw * sc)), H = Math.max(40, Math.round(sh * sc)), N = W * H;
+    var oc = document.createElement('canvas'); oc.width = W; oc.height = H;
+    var o = oc.getContext('2d', { willReadFrequently: true }); o.drawImage(src, 0, 0, W, H);
+    var d = o.getImageData(0, 0, W, H).data, g = new Float32Array(N), i, x, y;
+    for (i = 0; i < N; i++) g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    g = blur(g, W, H);
+
+    var mag = new Float32Array(N), dir = new Uint8Array(N), nms = new Float32Array(N);
+    for (y = 1; y < H - 1; y++) for (x = 1; x < W - 1; x++) {
+      i = y * W + x;
+      var gx = -g[i - W - 1] - 2 * g[i - 1] - g[i + W - 1] + g[i - W + 1] + 2 * g[i + 1] + g[i + W + 1];
+      var gy = -g[i - W - 1] - 2 * g[i - W] - g[i - W + 1] + g[i + W - 1] + 2 * g[i + W] + g[i + W + 1];
+      mag[i] = Math.sqrt(gx * gx + gy * gy);
+      var ang = Math.atan2(gy, gx) * 180 / Math.PI; if (ang < 0) ang += 180;
+      dir[i] = (ang < 22.5 || ang >= 157.5) ? 0 : ang < 67.5 ? 1 : ang < 112.5 ? 2 : 3;
+    }
+    var vals = [];
+    for (y = 1; y < H - 1; y++) for (x = 1; x < W - 1; x++) {
+      i = y * W + x; var a, b, m = mag[i], dd = dir[i];
+      if (dd === 0) { a = mag[i - 1]; b = mag[i + 1]; }
+      else if (dd === 1) { a = mag[i - W - 1]; b = mag[i + W + 1]; }
+      else if (dd === 2) { a = mag[i - W]; b = mag[i + W]; }
+      else { a = mag[i - W + 1]; b = mag[i + W - 1]; }
+      if (m >= a && m >= b && m > 4) { nms[i] = m; vals.push(m); }
+    }
+    if (vals.length < 60) return null;
+    var sorted = Float32Array.from(vals).sort();
+    var p = Math.min(0.97, Math.max(0.5, 0.93 - 0.3 * C.detail));
+    var high = sorted[Math.floor(sorted.length * p)], low = high * 0.4;
+
+    var seen = new Uint8Array(N), off = [-W - 1, -W, -W + 1, -1, 1, W - 1, W, W + 1], comps = [];
+    for (i = 0; i < N; i++) {
+      if (seen[i] || nms[i] < high) continue;
+      var q = [i], dp = [0], h = 0; seen[i] = 1;
+      while (h < q.length) {
+        var pi = q[h], pd = dp[h]; h++;
+        for (var n = 0; n < 8; n++) {
+          var nb = pi + off[n];
+          if (nb > 0 && nb < N && !seen[nb] && nms[nb] >= low) { seen[nb] = 1; q.push(nb); dp.push(pd + 1); }
+        }
+      }
+      if (q.length >= 14) comps.push({ q: q, dp: dp });
+    }
+
+    // Waktu muncul: garis tumbuh dari titik awalnya; titik awal menyebar dari tengah gambar
+    var fx = W * 0.5, fy = H * 0.4, maxD = Math.hypot(W, H) * 0.5, X = [], Y = [], T = [], mx = 0;
+    comps.forEach(function (cp) {
+      var s = cp.q[0], t0 = Math.hypot(s % W - fx, ((s / W) | 0) - fy) / maxD * 3.2 + Math.random() * 0.9;
+      for (var z = 0; z < cp.q.length; z++) {
+        var t = t0 + cp.dp[z] / 110; X.push(cp.q[z] % W); Y.push((cp.q[z] / W) | 0); T.push(t);
+        if (t > mx) mx = t;
+      }
+    });
+    var M = T.length; if (M < 60) return null;
+    var order = new Uint32Array(M); for (i = 0; i < M; i++) order[i] = i;
+    order.sort(function (a, b) { return T[a] - T[b]; });
+    var r = { W: W, H: H, M: M, X: new Uint16Array(M), Y: new Uint16Array(M), T: new Float32Array(M), CI: new Uint8Array(M) };
+    for (i = 0; i < M; i++) {
+      var s2 = order[i], tn = T[s2] / mx * TRACE;
+      r.X[i] = X[s2]; r.Y[i] = Y[s2]; r.T[i] = tn; r.CI[i] = Math.min(NC - 1, Math.floor(tn / TRACE * (NC - 1)));
+    }
+    return r;
+  }
+
+  function loadImg(src) {
+    return new Promise(function (res) {
+      var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(null); }; im.src = src;
+    });
+  }
+
+  function reset() {
+    cancelAnimationFrame(raf); clearTimeout(btnTimer);
+    stage.classList.remove('on', 'btn', 'fast'); $('skip').hidden = false;
+  }
+
+  function play(src, gate) {
+    var id = ++run; reset();
+    var data = analyze(src) || analyze(sample());
+    var W = data.W, H = data.H, M = data.M, X = data.X, Y = data.Y, T = data.T, CI = data.CI;
+    cv.width = W * S; cv.height = H * S;
+    var cw = cv.width, ch = cv.height;
+    var base = document.createElement('canvas'); base.width = cw; base.height = ch;
+    var b = base.getContext('2d'); b.globalCompositeOperation = 'lighter';
+    var appear = 0, settle = 0, t0 = 0, started = false, i;
+    var tw = [];
+    for (i = 0; i < 36; i++) tw.push({ i: Math.floor(M * (0.1 + Math.random() * 0.9)), per: 1.6 + Math.random() * 1.8, ph: Math.random() * 6.28 });
+
+    function drawSettled(n) {
+      var x = X[n] * S, y = Y[n] * S;
+      b.fillStyle = DIM[CI[n]]; b.fillRect(x - 2.5, y - 2.5, 5, 5);
+      b.fillStyle = CORE[CI[n]]; b.fillRect(x - 0.8, y - 0.8, 1.6, 1.6);
+    }
+    function startText() {
+      if (started) return; started = true; stage.classList.add('on');
+      btnTimer = setTimeout(function () { stage.classList.add('btn'); $('skip').hidden = true; }, (0.9 + words * 0.32 + 0.7) * 1000);
+    }
+    skipFn = function () {
+      for (; settle < M; settle++) drawSettled(settle);
+      appear = M; t0 = performance.now() - (LEAD + TRACE + HEAD + 0.2) * 1000;
+      clearTimeout(btnTimer); stage.classList.add('fast', 'btn'); startText(); $('skip').hidden = true;
+    };
+
+    function frame(now) {
+      if (id !== run) return;
+      var p = (now - t0) / 1000 - LEAD; if (p < 0) p = 0;
+      while (appear < M && T[appear] <= p) appear++;
+      while (settle < appear && T[settle] <= p - HEAD) { drawSettled(settle); settle++; }
+      ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, cw, ch); ctx.drawImage(base, 0, 0);
+      ctx.globalCompositeOperation = 'lighter';
+      for (i = settle; i < appear; i++) {
+        var a = 1 - (p - T[i]) / HEAD; if (a < 0) a = 0;
+        var x = X[i] * S, y = Y[i] * S;
+        ctx.fillStyle = 'rgba(255,225,250,' + (0.2 * a).toFixed(3) + ')'; ctx.fillRect(x - 5, y - 5, 10, 10);
+        ctx.fillStyle = 'rgba(255,248,253,' + (0.35 + 0.6 * a).toFixed(3) + ')'; ctx.fillRect(x - 1.4, y - 1.4, 2.8, 2.8);
+      }
+      if (p > TRACE + HEAD) { // kilau yang bergerak di sepanjang garis
+        var gx = (((p - TRACE - HEAD) * 0.22) % 1.6 - 0.3) * cw;
+        ctx.globalCompositeOperation = 'source-atop';
+        var gr = ctx.createLinearGradient(gx - 70 * S, 0, gx + 70 * S, ch * 0.45);
+        gr.addColorStop(0, 'rgba(255,240,255,0)'); gr.addColorStop(0.5, 'rgba(255,240,255,.6)'); gr.addColorStop(1, 'rgba(255,240,255,0)');
+        ctx.fillStyle = gr; ctx.fillRect(0, 0, cw, ch);
+        ctx.globalCompositeOperation = 'lighter';
+      }
+      for (var z = 0; z < tw.length; z++) { // bintang kecil berkelip
+        var s = tw[z]; if (s.i >= appear) continue;
+        var v = 0.5 + 0.5 * Math.sin(6.283 * p / s.per + s.ph); v = v * v * v;
+        if (v < 0.04) continue;
+        var sx = X[s.i] * S, sy = Y[s.i] * S, r = (2 + v * 7) * S * 0.5;
+        ctx.fillStyle = 'rgba(255,245,255,' + v.toFixed(3) + ')';
+        ctx.fillRect(sx - r, sy - 0.6, r * 2, 1.2); ctx.fillRect(sx - 0.6, sy - r, 1.2, r * 2);
+      }
+      if (p > TRACE - 0.8) startText();
+      raf = requestAnimationFrame(frame);
+    }
+
+    function begin() {
+      t0 = performance.now(); raf = requestAnimationFrame(frame);
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) skipFn();
+    }
+    if (gate && C.musik) {
+      $('gate').hidden = false;
+      $('gate').onclick = function () { $('gate').hidden = true; $('aud').play().catch(function () {}); begin(); };
+    } else begin();
+  }
+
+  $('skip').onclick = function () { if (skipFn) skipFn(); };
+  window.__ulang = function (im) { if (im) lastSrc = im; play(lastSrc || sample(), false); };
+
+  loadImg(C.foto).then(function (im) { lastSrc = im || sample(); play(lastSrc, true); });
+})();
+</script>
+</body>
+</html>
